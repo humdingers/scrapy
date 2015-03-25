@@ -1,0 +1,123 @@
+# -*- coding: utf-8 -*-
+import scrapy
+from scrapy.spider import Spider
+from bs4 import BeautifulSoup
+from bs4 import UnicodeDammit
+from task.items import TaskItem
+from scrapy import Request
+from scrapy.utils.response import get_base_url
+import urlparse
+
+class WineSpider(scrapy.Spider):
+    name = "wine"
+    #allowed_domains = ["tjkx.com"]
+    start_urls=['http://b2b.tjkx.com/product-0.htm']
+    def parse(self, response):
+        # get all product links
+        start_urls = WineSpider.start_urls
+        for number in range(106937,106990):
+            pagestr=str(number)
+            soup = BeautifulSoup(response.body,from_encoding="utf-8")
+            nodata=soup.find('div', attrs={"class": 'error-box'})
+            start_urls ='http://b2b.tjkx.com/product-%s.htm'%pagestr
+            if nodata==[]:
+                cnotinue
+            else:
+                page_link=start_urls
+                yield Request(url=page_link,callback=self.parse_detail)
+            
+    '''def parse(self, response):
+        # get all page links
+        start_urls = WineSpider.start_urls
+        soup = BeautifulSoup(response.body,from_encoding="utf-8")
+        nodata=soup.find('div', attrs={"class": 'nodata'})
+        for page in range(1,101):
+            if nodata== []:
+                break
+            else:
+                pagestr=str(page)
+                start_urls ='http://b2b.tjkx.com/list/%s----101000-0-0-0-0-0-0-0-0-0-0-0-0.htm'%pagestr
+                page_link=start_urls
+                yield Request(url=page_link,callback=self.parse_page)       
+    def parse_page(self,response):
+        # extract item link from page
+        f=open(r'd:\workplace\winer.txt','w')
+        soup = BeautifulSoup(response.body,from_encoding="utf-8")
+        title =soup.find_all('h2',attrs={"class": 'big_title'})
+        for number in range(len(title)):
+            title_a=title[number].find('a')
+            if title_a == None:
+                f.write(response.url)
+                item_links = ''
+                pro_link=item_links
+            else:
+                item_links="http://b2b.tjkx.com"+title_a.get('href')
+                pro_link=item_links
+                yield Request(url=pro_link,callback=self.parse_detail)
+        f.close()
+       '''
+    def parse_detail(self, response):
+        # extract item info
+        f=open(r'd:\workplace\winers.txt','w')
+        soup = BeautifulSoup(response.body,from_encoding="utf-8")
+        table = soup.find('table', attrs={"class": 'lxmess'})
+        div = soup.find_all('div', attrs={"class": 'pl_r'})
+        sname=soup.find_all(attrs={"class": 'p_name'})
+        item = TaskItem()  
+        new_tag = soup.new_tag("a")
+        new_tag.string = ""
+        if len(div)<2:
+            for n in range(len(div)):
+              div_a=div[n].find('a')  
+              if div_a==None:
+                  item['senddate']=div[n].get_text(strip=True).encode('utf-8')
+              else:
+                  div[n].a.replace_with(new_tag)
+                  item['senddate']=div.get_text(strip=True).encode('utf-8')
+        else:
+            div[1].a.replace_with(new_tag)
+            item['senddate']=div[1].get_text(strip=True).encode('utf-8')
+        if sname==None:
+            sou_name='none'
+            item['winename']=sou_name
+        else:
+            sou_name=sname[0].get_text(strip=True).encode('utf-8')
+            item['winename']=sou_name
+        item['url']=response.url
+        if table == None:
+            f.write(response.url)
+            table = ''
+        else:
+            roe = table.find_all('td')
+            item['linkman'] = roe[1].get_text(strip=True).encode('utf-8')
+            item['sector'] = roe[3].get_text(strip=True).encode('utf-8')
+            item['job'] = roe[5].get_text(strip=True).encode('utf-8')
+            item['cellphone'] = roe[7].get_text(strip=True).encode('utf-8')
+            item['telephone'] = roe[9].get_text(strip=True).encode('utf-8')
+            item['mail'] = roe[13].get_text(strip=True).encode('utf-8')
+            item['online_exhibition'] = roe[15].get_text(strip=True).encode('utf-8')
+            item['company_address'] = roe[17].get_text(strip=True).encode('utf-8')
+        
+        '''
+        if roe[15].string =='\n':
+            item['online_exhibition']='\n a'
+        else:
+            item['online_exhibition'] = roe[15].string.strip().encode('utf-8')
+        if roe[17].string =='\n':
+            item['company_address']='\n a'
+        else:
+            item['company_address'] = roe[17].string.strip().encode('utf-8')
+        f=open(r'd:\workplace\wine.txt','w')
+        f.write(item['url'])
+        f.write(item['senddate'])
+        f.write(item['linkman'])
+        f.write(item['sector'])
+        f.write(item['job'])
+        f.write(item['cellphone'])
+        f.write(item['telephone'])
+        f.write(item['mail'])
+        f.write(item['online_exhibition'])
+        f.write(item['company_address'])
+        '''
+        f.close()
+        yield item
